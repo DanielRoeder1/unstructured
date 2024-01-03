@@ -153,6 +153,8 @@ class HTMLDocument(XMLDocument):
         etree.strip_elements(self.document_tree, ["script", "style"], with_tail=False)
         root = _find_main(self.document_tree)
 
+        base_tree = self.document_tree.getroottree()
+
         articles = _find_articles(root, assemble_articles=self.assembled_articles)
         page_number = 0
         page = Page(number=page_number)
@@ -164,17 +166,25 @@ class HTMLDocument(XMLDocument):
                     # down a chain
                     continue
 
+                tag_xpath = base_tree.getpath(tag_elem)
+                parent_div = tag_elem.xpath('ancestor::div[1]')
+                div_parent_xpath = etree.ElementTree(parent_div[0]).getpath(parent_div[0]) if parent_div else ""
+
                 if _is_text_tag(tag_elem):
                     if _has_break_tags(tag_elem):
                         flattened_elems = _unfurl_break_tags(tag_elem)
                         for _tag_elem in flattened_elems:
                             element = _parse_tag(_tag_elem)
                             if element is not None:
+                                element.xpath = tag_xpath
+                                element.div_parent_xpath = div_parent_xpath
                                 page.elements.append(element)
 
                     else:
                         element = _parse_tag(tag_elem)
                         if element is not None:
+                            element.xpath = tag_xpath
+                            element.div_parent_xpath = div_parent_xpath
                             page.elements.append(element)
                     descendanttag_elems = tuple(tag_elem.iterdescendants())
 
@@ -192,16 +202,23 @@ class HTMLDocument(XMLDocument):
                         emphasized_texts=emphasized_texts,
                     )
                     if element is not None:
+                        element.xpath = tag_xpath
+                        element.div_parent_xpath = div_parent_xpath
                         page.elements.append(element)
 
                 elif _is_bulleted_table(tag_elem):
                     bulleted_text = _bulleted_text_from_table(tag_elem)
+                    for element in bulleted_text:
+                        element.xpath = tag_xpath
+                        element.div_parent_xpath = div_parent_xpath
                     page.elements.extend(bulleted_text)
                     descendanttag_elems = tuple(tag_elem.iterdescendants())
 
                 elif is_list_item_tag(tag_elem):
                     element, next_element = _process_list_item(tag_elem)
                     if element is not None:
+                        element.xpath = tag_xpath
+                        element.div_parent_xpath = div_parent_xpath
                         page.elements.append(element)
                         descendanttag_elems = _get_bullet_descendants(
                             tag_elem,
@@ -211,6 +228,8 @@ class HTMLDocument(XMLDocument):
                 elif tag_elem.tag in TABLE_TAGS:
                     element = _parse_HTMLTable_from_table_elem(tag_elem)
                     if element is not None:
+                        element.xpath = tag_xpath
+                        element.div_parent_xpath = div_parent_xpath
                         page.elements.append(element)
                     if element or tag_elem.tag == "table":
                         descendanttag_elems = tuple(tag_elem.iterdescendants())
