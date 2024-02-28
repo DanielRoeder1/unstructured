@@ -131,7 +131,7 @@ def partition_html(
         if not content_type.startswith("text/html"):
             raise ValueError(f"Expected content type text/html. Got {content_type}.")
 
-        document = HTMLDocument.from_string(response.text, parser=parser)
+        document = HTMLDocument.from_string(response.text, parser=parser, assemble_articles = html_assemble_articles)
 
     if skip_headers_and_footers:
         document = filter_footer_and_header(document)

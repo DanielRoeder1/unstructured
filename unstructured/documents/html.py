@@ -309,17 +309,19 @@ class HTMLDocument(XMLDocument):
             return out
 
 
-def _get_links_from_tag(tag_elem: etree._Element) -> List[Link]:
+def  _get_links_from_tag(tag_elem: etree._Element) -> List[Link]:
     """Hyperlinks within and below `tag_elem`."""
     links: List[Link] = []
     href = tag_elem.get("href")
     # TODO(klaijan) - add html href start_index
     if href:
-        links.append({"text": tag_elem.text, "url": href, "start_index": -1})
+        text = tag_elem.xpath('string()')
+        links.append({"text": text.strip(), "url": href, "start_index": -1})
     for tag in tag_elem.iterdescendants():
         href = tag.get("href")
         if href:
-            links.append({"text": tag.text, "url": href, "start_index": -1})
+            text = tag.text or tag.xpath('string()')
+            links.append({"text": text.strip(), "url": href, "start_index": -1})
     return links
 
 
@@ -426,6 +428,10 @@ def _parse_tag(
     text = _construct_text(tag_elem)
     if not text:
         return None
+    # Not perfect as a the link text might be present multiple times in the text
+    for link in links:
+        if link["text"] is not None:
+            link["start_index"] = (start:=text.find(link["text"]), start + len(link["text"]) if start != -1 else -1)
     return _text_to_element(
         text,
         tag_elem.tag,
