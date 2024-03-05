@@ -190,7 +190,12 @@ class HTMLDocument(XMLDocument):
 
                 elif _is_container_with_text(tag_elem):
                     links = _get_links_from_tag(tag_elem)
+                    text = tag_elem.text
+                    for link in links:
+                        if link["text"] is not None:
+                            link["start_index"] = (start:=text.find(link["text"]), start + len(link["text"]) if start != -1 else -1)
                     emphasized_texts = _get_emphasized_texts_from_tag(tag_elem)
+
                     # -- having text is guaranteed by `_is_container_with_text()` --
                     assert tag_elem.text is not None
                     element = _text_to_element(
@@ -616,6 +621,9 @@ def _process_list_item(
     if tag_elem.tag in LIST_TAGS + LIST_ITEM_TAGS:
         text = _construct_text(tag_elem)
         links = _get_links_from_tag(tag_elem)
+        for link in links:
+            if link["text"] is not None:
+                link["start_index"] = (start:=text.find(link["text"]), start + len(link["text"]) if start != -1 else -1)
         emphasized_texts = _get_emphasized_texts_from_tag(tag_elem)
         depth = len(
             [el for el in tag_elem.iterancestors() if el.tag in LIST_TAGS + LIST_ITEM_TAGS],
