@@ -321,12 +321,14 @@ def  _get_links_from_tag(tag_elem: etree._Element) -> List[Link]:
     # TODO(klaijan) - add html href start_index
     if href:
         text = tag_elem.xpath('string()')
-        links.append({"text": text.strip(), "url": href, "start_index": -1})
+        if text:
+            links.append({"text": text.strip(), "url": href, "start_index": -1})
     for tag in tag_elem.iterdescendants():
         href = tag.get("href")
         if href:
             text = tag.text or tag.xpath('string()')
-            links.append({"text": text.strip(), "url": href, "start_index": -1})
+            if text:
+                links.append({"text": text.strip(), "url": href, "start_index": -1})
     return links
 
 
