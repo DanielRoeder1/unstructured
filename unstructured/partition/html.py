@@ -39,7 +39,7 @@ def partition_html(
     ssl_verify: bool = True,
     parser: VALID_PARSERS = None,
     source_format: Optional[str] = None,
-    html_assemble_articles: bool = False,
+    html_assemble_articles: bool = True,
     metadata_filename: Optional[str] = None,
     metadata_last_modified: Optional[str] = None,
     skip_headers_and_footers: bool = False,
