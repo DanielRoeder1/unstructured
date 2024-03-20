@@ -191,9 +191,7 @@ class HTMLDocument(XMLDocument):
                 elif _is_container_with_text(tag_elem):
                     links = _get_links_from_tag(tag_elem)
                     text = tag_elem.text
-                    for link in links:
-                        if link["text"] is not None:
-                            link["start_index"] = (start:=text.find(link["text"]), start + len(link["text"]) if start != -1 else -1)
+
                     emphasized_texts = _get_emphasized_texts_from_tag(tag_elem)
 
                     # -- having text is guaranteed by `_is_container_with_text()` --
@@ -313,24 +311,24 @@ class HTMLDocument(XMLDocument):
                 )  # pragma: no cover
             return out
 
-
-def  _get_links_from_tag(tag_elem: etree._Element) -> List[Link]:
+def _get_links_from_tag(tag_elem: etree._Element) -> List[Link]:
     """Hyperlinks within and below `tag_elem`."""
     links: List[Link] = []
     href = tag_elem.get("href")
-    # TODO(klaijan) - add html href start_index
     if href:
-        text = tag_elem.xpath('string()')
-        if text:
-            links.append({"text": text.strip(), "url": href, "start_index": -1})
+        links.append({"text": tag_elem.text, "url": href, "start_index": -1})
+
+    start_index = len(tag_elem.text.lstrip()) if tag_elem.text else 0
     for tag in tag_elem.iterdescendants():
         href = tag.get("href")
         if href:
-            text = tag.text or tag.xpath('string()')
-            if text:
-                links.append({"text": text.strip(), "url": href, "start_index": -1})
-    return links
+            links.append({"text": tag.text, "url": href, "start_index": (start_index, start_index+len(tag.text))})
 
+        if tag.text:
+            start_index = start_index + len(tag.text)
+        if tag.tail:
+            start_index = start_index + len(tag.tail)
+    return links
 
 def _is_bulleted_table(table_elem: etree._Element) -> bool:
     """True when all text in `table_elem` is bulleted text.
@@ -435,10 +433,7 @@ def _parse_tag(
     text = _construct_text(tag_elem)
     if not text:
         return None
-    # Not perfect as a the link text might be present multiple times in the text
-    for link in links:
-        if link["text"] is not None:
-            link["start_index"] = (start:=text.find(link["text"]), start + len(link["text"]) if start != -1 else -1)
+    
     return _text_to_element(
         text,
         tag_elem.tag,
@@ -623,9 +618,6 @@ def _process_list_item(
     if tag_elem.tag in LIST_TAGS + LIST_ITEM_TAGS:
         text = _construct_text(tag_elem)
         links = _get_links_from_tag(tag_elem)
-        for link in links:
-            if link["text"] is not None:
-                link["start_index"] = (start:=text.find(link["text"]), start + len(link["text"]) if start != -1 else -1)
         emphasized_texts = _get_emphasized_texts_from_tag(tag_elem)
         depth = len(
             [el for el in tag_elem.iterancestors() if el.tag in LIST_TAGS + LIST_ITEM_TAGS],
