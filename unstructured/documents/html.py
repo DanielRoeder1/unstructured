@@ -322,6 +322,11 @@ def _get_links_from_tag(tag_elem: etree._Element) -> List[Link]:
     for tag in tag_elem.iterdescendants():
         href = tag.get("href")
         if href:
+            # HotFix check for validation
+            if not tag.text and not tag.tail:
+                tag.text = ''.join(tag.itertext())
+            #print(f"Tag: {tag}\n, Text: {tag.text}\n, URL: {tag.get('href')}\n, Itertexxt: {''.join(tag.itertext())}\n, Tail: {tag.tail}")
+
             links.append({"text": tag.text, "url": href, "start_index": (start_index, start_index+len(tag.text))})
 
         if tag.text:
